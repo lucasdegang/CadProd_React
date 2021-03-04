@@ -1,6 +1,16 @@
 import React, { Component } from 'react';
 import axios from 'axios'
-const baseUrl = 'http://localhost:3080/users'
+import dbConnection from '../json/dbConnection.json'
+
+var baseUrl = ""
+
+function dbConnect(){
+    {dbConnection.map((content, i) =>{
+        baseUrl = content.baseUrl
+    })}
+}
+
+dbConnect()
 
 const initialState = {
     user : {name: ''},
@@ -8,7 +18,7 @@ const initialState = {
 }
 
 export default class Home extends Component {
-    
+
     state = {...initialState}
 
     clear(){
@@ -19,13 +29,40 @@ export default class Home extends Component {
         const user = this.state.user
         const method = 'post'
         const url = baseUrl
+
+        var nameValid = function(){
+            if( user.name ){
+                return true
+            }
+            alert("Name field is empty")
+            return false
+        }
+
+        if(!nameValid()){
+            return false;
+        }
+
         axios[method](url, user)
-            .then(resp =>{
-                const list = this.getUpdatedList(resp.data)
-                this.setState( {user : initialState, list})
-            })
+        .then(resp =>{
+            const list = this.getUpdatedList(resp.data)
+            this.setState( {user : initialState, list})
+            this.clear()
+        })
     }
-    
+
+    get(){
+        const user = this.state.user
+        const method = 'get'
+        const url = baseUrl
+
+        axios[method](url, user)
+        .then(resp =>{
+            //const list = this.getUpdatedList(resp.data)
+            //this.setState( {user : initialState, list})
+            this.setState({list : resp.data})
+        })
+    }
+
     getUpdatedList(user){
         const list = this.state.list.filter(u => u.id != user.id)
         list.unshift(user)
@@ -37,8 +74,19 @@ export default class Home extends Component {
         user[event.target.name] = event.target.value
         this.setState({user})
     }
-    
+
+    renderTable(){
+        return this.state.list.map(user => {
+            return (
+                <div>
+                    {user.id} {user.name}
+                </div>
+            )
+        })
+    }
+
     render () {
+        console.log(this.state.list)
         return (
             <div className="container">
                 <form>
@@ -51,8 +99,10 @@ export default class Home extends Component {
                     </div>
                     
                     <button type="button" className="btn btn-danger" onClick={e => this.save(e)}>Save</button>
-                    <button type="button" className="btn btn-danger" onClick={e => this.clear(e)}>Cancel</button>
+                    <button type="button" className="btn btn-danger ml-2" onClick={e => this.get(e)}>Get</button>
+                    <button type="button" className="btn btn-danger ml-2" onClick={e => this.clear(e)}>Cancel</button>
                 </form>
+                {this.renderTable()}
             </div>
             
         );
